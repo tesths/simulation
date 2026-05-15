@@ -69,8 +69,8 @@
 - `student_login.html`：班级专属链接进入后的选组页
 - `student_form.html`：学生填写页
 - `teacher_login.html`：老师登录页
-- `teacher_dashboard.html`：老师实时总览页
-- `teacher_classroom_new.html`：新建班级与生成学生链接页
+- `teacher_dashboard.html`：老师实时总览页，支持全班叠加图
+- `teacher_classroom_new.html`：新建班级、生成学生链接、查看历史班级链接页
 
 ### `app/static/`
 
@@ -99,11 +99,12 @@
 3. 服务端把 `teacher_authenticated` 写入 Session
 4. 跳转到 `GET /teacher/dashboard`
 5. 老师可切换当前班级，也可前往 `GET /teacher/classrooms/new` 新建班级
-6. 新建班级后，系统生成学生专属链接并展示给老师
+6. 新建班级后，系统生成学生专属链接并展示给老师；班级管理页也会列出历史创建班级及对应学生端链接
 7. dashboard 页面建立 `WS /ws/teacher` 连接
 8. 学生保存时，老师端收到 `group-updated` 消息
 9. 老师端再调用 `GET /api/charts/group/{group_id}` 拉取该组最新图表数据
 10. 浏览器仅更新对应卡片，不整页刷新
+11. 老师可在 dashboard 展开“全班叠加图”，统一查看所有已填写小组的两条温度曲线
 
 ## 实时同步机制
 
@@ -122,6 +123,8 @@
 2. 教师前端收到消息后，再请求：
 
 - `GET /api/charts/group/{group_id}`
+
+3. 如果老师当前展开了“全班叠加图”，前端会在单组卡片刷新后，使用页面内最新卡片数据重绘叠加图，而不是额外请求新的聚合接口
 
 优点：
 
@@ -144,7 +147,7 @@
 - `GET /student/form`：学生填写页
 - `GET /teacher`：老师登录页
 - `GET /teacher/dashboard`：老师实时总览页
-- `GET /teacher/classrooms/new`：新建班级与获取学生链接页
+- `GET /teacher/classrooms/new`：新建班级、查看已创建班级与获取学生链接页
 
 ### 行为路由
 
@@ -225,6 +228,7 @@
 - 没有历史记录页面
 - 没有导出、打印、二维码生成功能
 - 图表纵轴固定为 `0-100°C`
+- 历史班级页当前展示的是班级元信息和学生入口链接，不包含每个班级的历史提交明细
 
 ## 已知实现取舍
 

@@ -55,6 +55,32 @@
     {% else %}
     <p class="helper-line">创建后，这里会显示学生专属链接。</p>
     {% endif %}
+
+    <section class="teacher-history-panel">
+      <div class="teacher-history-header">
+        <div>
+          <p class="eyebrow">已创建班级</p>
+          <p class="teacher-link-note">这里会列出教师之前创建过的班级信息，以及每个班级对应的学生端链接。</p>
+        </div>
+      </div>
+
+      <div class="teacher-history-list">
+        {% for classroom in classroom_links %}
+        <article class="teacher-history-card{% if classroom.is_current %} current{% endif %}">
+          <div class="teacher-history-meta">
+            <div>
+              <h2>{{ classroom.name }}</h2>
+              <p class="teacher-history-summary">{{ classroom.group_count }} 个小组 · 创建时间 {{ classroom.created_at }}</p>
+            </div>
+            {% if classroom.is_current %}
+            <span class="teacher-history-badge">当前班级</span>
+            {% endif %}
+          </div>
+          <a class="entry-link-pill" href="{{ classroom.student_entry_path }}">{{ classroom.student_entry_url }}</a>
+        </article>
+        {% endfor %}
+      </div>
+    </section>
   </section>
 </main>
 {% endblock %}

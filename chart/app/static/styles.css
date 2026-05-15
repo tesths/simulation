@@ -386,6 +386,11 @@ a {
   padding: 16px;
 }
 
+.teacher-page-expanded {
+  place-items: start center;
+  padding-bottom: 32px;
+}
+
 .teacher-screen,
 .student-screen {
   width: min(100vw - 32px, calc((100vh - 32px) * 16 / 9));
@@ -399,6 +404,14 @@ a {
   display: grid;
   grid-template-rows: auto auto 1fr;
   gap: 16px;
+}
+
+.teacher-screen-expanded {
+  width: min(100vw - 32px, 1500px);
+  min-height: calc(100vh - 32px);
+  aspect-ratio: auto;
+  align-self: start;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
 }
 
 .teacher-screen-light {
@@ -431,8 +444,13 @@ a {
 
 .teacher-toolbar {
   display: grid;
-  grid-template-columns: minmax(320px, 520px);
+  grid-template-columns: minmax(320px, 520px) auto;
   gap: 12px;
+  align-items: end;
+}
+
+.teacher-overlay-toggle {
+  justify-self: start;
 }
 
 .teacher-inline-form,
@@ -489,6 +507,62 @@ a {
   margin-top: 28px;
 }
 
+.teacher-history-panel {
+  display: grid;
+  gap: 16px;
+  margin-top: 28px;
+}
+
+.teacher-history-list {
+  display: grid;
+  gap: 14px;
+}
+
+.teacher-history-card {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+  border-radius: 20px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  border: 1px solid rgba(201, 214, 230, 0.95);
+}
+
+.teacher-history-card.current {
+  border-color: rgba(37, 99, 235, 0.28);
+  box-shadow: 0 12px 28px rgba(37, 99, 235, 0.08);
+}
+
+.teacher-history-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.teacher-history-card h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.teacher-history-summary {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.teacher-history-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--brand-soft);
+  color: var(--brand-strong);
+  font-size: 0.9rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
 .teacher-link-note {
   margin: 6px 0 0;
   color: var(--muted);
@@ -530,6 +604,104 @@ a {
   gap: 12px;
 }
 
+.teacher-overlay-panel {
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  gap: 16px;
+  padding: 18px;
+}
+
+.teacher-overlay-panel[hidden] {
+  display: none;
+}
+
+.teacher-overlay-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.teacher-overlay-header h2 {
+  margin: 0;
+  font-size: 1.28rem;
+}
+
+.teacher-overlay-note,
+.teacher-overlay-caption {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.teacher-overlay-summary {
+  margin: 0;
+  color: var(--brand-strong);
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.teacher-overlay-meta {
+  display: grid;
+  gap: 12px;
+}
+
+.teacher-overlay-line-guide {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+}
+
+.overlay-line-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+  font-weight: 700;
+}
+
+.overlay-line-swatch {
+  display: inline-block;
+  width: 30px;
+  border-top: 4px solid var(--text);
+  border-radius: 999px;
+}
+
+.overlay-line-swatch.dashed {
+  border-top-style: dashed;
+}
+
+.teacher-overlay-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.overlay-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(201, 214, 230, 0.95);
+  color: var(--text);
+  font-weight: 700;
+}
+
+.overlay-legend-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--overlay-group-color);
+  box-shadow:
+    0 0 0 3px rgba(255, 255, 255, 0.92),
+    0 0 0 4px rgba(37, 99, 235, 0.08);
+}
+
 .chart-card {
   display: grid;
   grid-template-rows: auto 1fr;
@@ -566,6 +738,11 @@ a {
 .teacher-grid .chart-stage,
 .teacher-grid .chart-empty {
   min-height: 176px;
+}
+
+.teacher-overlay-panel .chart-stage.large,
+.teacher-overlay-panel .chart-empty {
+  min-height: 400px;
 }
 
 .record-panel,
@@ -625,6 +802,18 @@ a {
 
   .chart-stage.large {
     min-height: 320px;
+  }
+
+  .teacher-overlay-header {
+    flex-direction: column;
+  }
+
+  .teacher-overlay-summary {
+    white-space: normal;
+  }
+
+  .teacher-history-meta {
+    flex-direction: column;
   }
 }
 

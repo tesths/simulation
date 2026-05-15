@@ -145,6 +145,21 @@ def _teacher_classroom_page_context(
     *,
     created: bool = False,
 ) -> dict[str, object]:
+    classroom_links = []
+    for classroom in list_classrooms(settings.database_target):
+        student_entry_path = _student_entry_path(str(classroom["slug"]))
+        classroom_links.append(
+            {
+                "id": int(classroom["id"]),
+                "name": str(classroom["name"]),
+                "group_count": int(classroom["group_count"]),
+                "created_at": str(classroom["created_at"]),
+                "student_entry_path": student_entry_path,
+                "student_entry_url": f"{_public_base_url(request)}{student_entry_path}",
+                "is_current": int(classroom["id"]) == int(current_classroom["id"]),
+            }
+        )
+
     student_entry_path = _student_entry_path(str(current_classroom["slug"]))
     student_entry_url = f"{_public_base_url(request)}{student_entry_path}"
     return {
@@ -154,6 +169,7 @@ def _teacher_classroom_page_context(
         "student_entry_url": student_entry_url if created else None,
         "group_count_value": int(current_classroom["group_count"]),
         "created": created,
+        "classroom_links": classroom_links,
     }
 
 

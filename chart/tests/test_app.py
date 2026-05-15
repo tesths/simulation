@@ -297,6 +297,22 @@ def test_teacher_login_is_required_and_dashboard_scopes_to_current_classroom(
     assert "当前学生链接" not in dashboard.text
 
 
+def test_teacher_dashboard_includes_overlay_chart_toggle_and_panel(
+    client: TestClient,
+) -> None:
+    login_teacher(client)
+
+    dashboard = client.get("/teacher/dashboard")
+
+    assert dashboard.status_code == 200
+    assert 'data-overlay-toggle' in dashboard.text
+    assert 'data-overlay-panel' in dashboard.text
+    assert 'data-overlay-stage' in dashboard.text
+    assert 'data-overlay-legend' in dashboard.text
+    assert "查看全班叠加图" in dashboard.text
+    assert "同组同色，凉水实线，热水虚线" in dashboard.text
+
+
 def test_teacher_websocket_receives_classroom_scoped_update_after_save(
     client: TestClient,
 ) -> None:
@@ -426,3 +442,37 @@ def test_teacher_new_classroom_page_requires_login_and_hides_link_before_create(
     assert "创建后，这里会显示学生专属链接。" in page.text
     assert "当前学生链接" not in page.text
     assert 'data-student-entry-link="' not in page.text
+
+
+def test_teacher_new_classroom_page_lists_existing_classrooms_and_student_links(
+    client: TestClient,
+) -> None:
+    login_teacher(client)
+    client.post(
+        "/teacher/classrooms",
+        data={"name": "公开课一班", "group_count": "6"},
+        follow_redirects=True,
+    )
+    client.post(
+        "/teacher/classrooms",
+        data={"name": "公开课二班", "group_count": "4"},
+        follow_redirects=True,
+    )
+
+    page = client.get(
+        "/teacher/classrooms/new",
+        headers={
+            "host": "juchart.zeabur.app",
+            "x-forwarded-proto": "https",
+        },
+    )
+
+    assert page.status_code == 200
+    assert "已创建班级" in page.text
+    assert "公开课一班" in page.text
+    assert "公开课二班" in page.text
+    assert "默认班级" in page.text
+    assert "6 个小组" in page.text
+    assert "4 个小组" in page.text
+    assert page.text.count("https://juchart.zeabur.app/student/classrooms/") >= 3
+    assert "当前班级" in page.text

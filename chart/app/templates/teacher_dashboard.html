@@ -10,6 +10,7 @@
     class="teacher-screen teacher-screen-light"
     data-teacher-dashboard
     data-current-classroom-id="{{ current_classroom.id }}"
+    data-current-classroom-name="{{ current_classroom.name }}"
     data-student-entry-link="{{ student_entry_path }}"
     style="--teacher-grid-columns: {{ grid_columns }};"
   >
@@ -44,6 +45,15 @@
         </label>
         <button class="secondary-button" type="submit">切换</button>
       </form>
+      <button
+        class="secondary-button teacher-overlay-toggle"
+        type="button"
+        data-overlay-toggle
+        aria-controls="teacher-overlay-panel"
+        aria-expanded="false"
+      >
+        查看全班叠加图
+      </button>
     </section>
 
     <div class="teacher-grid">
@@ -62,6 +72,37 @@
       </article>
       {% endfor %}
     </div>
+
+    <section
+      class="teacher-overlay-panel chart-card chart-card-light"
+      id="teacher-overlay-panel"
+      data-overlay-panel
+      hidden
+      aria-hidden="true"
+    >
+      <div class="teacher-overlay-header">
+        <div>
+          <h2>全班叠加趋势</h2>
+          <p class="teacher-overlay-note">同组同色，凉水实线，热水虚线</p>
+        </div>
+        <p class="teacher-overlay-summary" data-overlay-summary></p>
+      </div>
+      <div class="teacher-overlay-meta">
+        <div class="teacher-overlay-line-guide">
+          <span class="overlay-line-key">
+            <span class="overlay-line-swatch"></span>
+            <span>凉水</span>
+          </span>
+          <span class="overlay-line-key">
+            <span class="overlay-line-swatch dashed"></span>
+            <span>热水</span>
+          </span>
+          <span class="teacher-overlay-caption">仅统计已填写小组</span>
+        </div>
+        <div class="teacher-overlay-legend" data-overlay-legend></div>
+      </div>
+      <div class="chart-stage large" data-overlay-stage></div>
+    </section>
   </section>
 </main>
 {% endblock %}

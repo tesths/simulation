@@ -39,6 +39,8 @@ def test_teacher_dashboard_updates_after_student_saves(live_server, browser_cont
     )
     assert teacher_layout["screenScrollHeight"] <= teacher_layout["screenClientHeight"]
     assert teacher_layout["gridScrollHeight"] <= teacher_layout["gridClientHeight"]
+    expect(teacher_page.locator("[data-overlay-panel]")).to_be_hidden()
+    expect(teacher_page.get_by_role("button", name="查看全班叠加图")).to_be_visible()
     expect(teacher_page.locator('[data-group-id="1"] [data-chart-date]')).to_have_text("未填写")
     expect(teacher_page.locator('[data-group-id="2"] [data-chart-date]')).to_have_text("未填写")
     expect(teacher_page.locator('[data-group-id="3"] [data-chart-date]')).to_have_text("未填写")
@@ -82,3 +84,57 @@ def test_teacher_dashboard_updates_after_student_saves(live_server, browser_cont
     expect(teacher_page.locator('[data-group-id="1"] svg')).to_have_count(1)
     expect(teacher_page.locator('[data-group-id="2"] svg')).to_have_count(1)
     expect(teacher_page.locator('[data-group-id="3"] svg')).to_have_count(1)
+
+    teacher_page.get_by_role("button", name="查看全班叠加图").click()
+
+    overlay_panel = teacher_page.locator("[data-overlay-panel]")
+    expect(overlay_panel).to_be_visible()
+    expect(overlay_panel).to_contain_text("全班叠加趋势")
+    expect(overlay_panel).to_contain_text("同组同色，凉水实线，热水虚线")
+    expect(overlay_panel).to_contain_text("已填写 3 / 10 组")
+    expect(overlay_panel.locator("[data-overlay-stage] svg")).to_have_count(1)
+    expect(teacher_page.get_by_role("button", name="收起全班叠加图")).to_be_visible()
+
+    overlay_style = teacher_page.evaluate(
+        """() => {
+            const polylines = Array.from(
+                document.querySelectorAll('[data-overlay-stage] polyline')
+            );
+            const strokes = new Set(polylines.map((line) => line.getAttribute('stroke')));
+            const dashed = polylines.filter(
+                (line) => (line.getAttribute('stroke-dasharray') || '').length > 0
+            ).length;
+            return {
+                polylineCount: polylines.length,
+                uniqueStrokeCount: strokes.size,
+                dashedCount: dashed,
+            };
+        }"""
+    )
+    assert overlay_style["polylineCount"] == 6
+    assert overlay_style["uniqueStrokeCount"] == 3
+    assert overlay_style["dashedCount"] == 3
+
+    before_points = overlay_panel.locator("[data-overlay-stage] polyline").nth(0).get_attribute("points")
+    assert before_points
+
+    student_update_page = student_one_context.new_page()
+    student_update_page.goto(f"{base_url}{student_entry_path}")
+    student_update_page.get_by_role("button", name="第1组").click()
+    expect(student_update_page).to_have_url(f"{base_url}/student/form")
+    fill_temperature_form(
+        student_update_page,
+        "2026-05-11",
+        [22, 24, 26, 28, 30, 32, 34],
+        [48, 46, 44, 42, 40, 38, 36],
+    )
+    student_update_page.get_by_role("button", name="保存并生成折线图").click()
+    expect(student_update_page.locator("#save-status")).to_have_text("保存成功，折线图已更新。")
+    student_update_page.close()
+
+    expect(teacher_page.locator('[data-group-id="1"] [data-chart-date]')).to_have_text("2026-05-11")
+    expect(overlay_panel).to_contain_text("已填写 3 / 10 组")
+    expect(overlay_panel.locator("[data-overlay-stage] polyline")).to_have_count(6)
+    after_points = overlay_panel.locator("[data-overlay-stage] polyline").nth(0).get_attribute("points")
+    assert after_points
+    assert after_points != before_points
