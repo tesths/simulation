@@ -92,6 +92,18 @@ def _student_entry_path(classroom_slug: str) -> str:
     return f"/student/classrooms/{classroom_slug}"
 
 
+def _public_base_url(request: Request) -> str:
+    forwarded_proto = request.headers.get("x-forwarded-proto")
+    forwarded_host = request.headers.get("x-forwarded-host")
+    scheme = (
+        forwarded_proto.split(",", 1)[0].strip()
+        if forwarded_proto
+        else request.url.scheme
+    )
+    host = forwarded_host or request.headers.get("host") or request.url.netloc
+    return f"{scheme}://{host}".rstrip("/")
+
+
 def _student_redirect() -> RedirectResponse:
     return RedirectResponse(url="/student", status_code=303)
 
@@ -134,7 +146,7 @@ def _teacher_classroom_page_context(
     created: bool = False,
 ) -> dict[str, object]:
     student_entry_path = _student_entry_path(str(current_classroom["slug"]))
-    student_entry_url = f"{str(request.base_url).rstrip('/')}{student_entry_path}"
+    student_entry_url = f"{_public_base_url(request)}{student_entry_path}"
     return {
         "request": request,
         "current_classroom": current_classroom,
@@ -466,7 +478,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             int(current_classroom["id"]),
         )
         student_entry_path = _student_entry_path(str(current_classroom["slug"]))
-        student_entry_url = f"{str(request.base_url).rstrip('/')}{student_entry_path}"
         return templates.TemplateResponse(
             request,
             "teacher_dashboard.html",

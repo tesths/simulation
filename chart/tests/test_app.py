@@ -45,6 +45,36 @@ def test_sqlite_database_url_mode_and_secure_session_cookie(tmp_path: Path) -> N
     assert database_file.exists()
 
 
+def test_home_static_assets_use_root_relative_paths(client: TestClient) -> None:
+    response = client.get("/")
+
+    assert response.status_code == 200
+    assert 'href="/static/styles.css"' in response.text
+    assert 'src="/static/app.js"' in response.text
+
+
+def test_created_classroom_entry_url_prefers_forwarded_https(client: TestClient) -> None:
+    login_teacher(client)
+    redirect_response = client.post(
+        "/teacher/classrooms",
+        data={"name": "公开课一班", "group_count": "6"},
+        follow_redirects=False,
+    )
+
+    assert redirect_response.status_code in {302, 303}
+
+    created_page = client.get(
+        redirect_response.headers["location"],
+        headers={
+            "host": "juchart.zeabur.app",
+            "x-forwarded-proto": "https",
+        },
+    )
+
+    assert created_page.status_code == 200
+    assert "https://juchart.zeabur.app/student/classrooms/" in created_page.text
+
+
 def login_teacher(client: TestClient, password: str = "teach-pass") -> None:
     response = client.post(
         "/teacher/login",
