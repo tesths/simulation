@@ -19,6 +19,11 @@
 - `chart-app`：Python Web 服务
 - `chart-postgres`：Zeabur Postgres 服务
 
+### 仓库目录
+
+- 当前 Git 仓库根目录是 `simulation`
+- Zeabur 应用服务的 `Root Directory` 必须设置为 `chart`
+
 ### 启动命令
 
 仓库里已经提供 [`zbpack.json`](../zbpack.json)，核心启动命令是：
@@ -29,6 +34,8 @@ uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1
 
 重点：
 
+- `zbpack.json` 使用 Zeabur 当前文档约定的 `snake_case` 字段
+- 当前应用入口是 `app.main:app`，因此这里显式使用 `uvicorn` 启动
 - `--workers 1` 不能改大
 - 端口必须绑定平台注入的 `PORT`
 
@@ -92,3 +99,7 @@ SESSION_COOKIE_SECURE=true
 4. 用老师端和学生端做一次最小回归
 
 当前 schema 仍然保持“每组一条当前记录”的简单结构，回滚风险主要在应用版本，而不在数据库数据量。
+
+## 配置清单
+
+实际部署时可直接对照 [Zeabur 部署清单](zeabur-checklist.md) 逐项完成。

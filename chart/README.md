@@ -100,3 +100,4 @@ python3 -m playwright install chromium
 - [系统架构](docs/architecture.md)
 - [开发与扩展指南](docs/development.md)
 - [部署准备与上线说明](docs/deployment.md)
+- [Zeabur 部署清单](docs/zeabur-checklist.md)
