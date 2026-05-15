@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block content %}
+<main class="page-shell home-shell">
+  <section class="panel hero-panel">
+    <p class="eyebrow">五年级科学实验</p>
+    <h1>温度变化记录系统</h1>
+    <p class="lead">学生填写当前小组的实验数据，老师实时查看全班折线图。</p>
+
+    <div class="entry-card-grid single-column">
+      <a class="entry-link-card teacher-entry-card" href="/teacher">
+        <p class="eyebrow">教师入口</p>
+        <h2>老师登录</h2>
+        <p class="entry-card-note">进入 16:9 实时总览，切换班级、创建班级，并获取发送给学生的专属链接。</p>
+      </a>
+    </div>
+
+    <p class="home-note">学生请使用老师发送的班级专属链接进入，不能从首页直接进入填写页面。</p>
+  </section>
+</main>
+{% endblock %}

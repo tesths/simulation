@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}学生入口{% endblock %}
+
+{% block content %}
+<main class="page-shell">
+  <section class="panel login-panel classroom-entry-panel">
+    <p class="eyebrow">学生入口</p>
+    <h1>{{ classroom.name }}</h1>
+    <p class="lead">学生无需登录，打开班级专属链接后，直接选择你们的小组进入填写页面。</p>
+    <form
+      class="group-grid"
+      action="/student/classrooms/{{ classroom.slug }}/login"
+      method="post"
+    >
+      {% for group in groups %}
+      <button class="group-button" type="submit" name="group_id" value="{{ group.id }}">
+        {{ group.name }}
+      </button>
+      {% endfor %}
+    </form>
+  </section>
+</main>
+{% endblock %}

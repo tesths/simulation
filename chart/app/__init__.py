@@ -1,0 +1,1 @@
+"""Temperature classroom app package."""

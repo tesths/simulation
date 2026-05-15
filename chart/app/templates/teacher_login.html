@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}老师登录{% endblock %}
+
+{% block content %}
+<main class="page-shell">
+  <section class="panel teacher-login-panel">
+    <p class="eyebrow">老师入口</p>
+    <h1>查看课堂总览</h1>
+    <p class="lead">输入老师密码后进入 16:9 实时大屏。</p>
+    <form class="teacher-form" action="/teacher/login" method="post">
+      <label>
+        <span>老师密码</span>
+        <input type="password" name="password" autocomplete="current-password" required />
+      </label>
+      <button class="primary-button" type="submit">进入总览页</button>
+    </form>
+    {% if login_error %}
+    <p class="error-line">密码不正确，请重新输入。</p>
+    {% endif %}
+  </section>
+</main>
+{% endblock %}

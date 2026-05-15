@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}学生填写{% endblock %}
+
+{% block body_class %}student-body{% endblock %}
+
+{% block content %}
+<main class="student-page">
+  <section class="student-screen">
+    <section class="panel record-panel">
+      <div class="page-header">
+        <div>
+          <p class="eyebrow">学生填写</p>
+          <h1>{{ classroom.name }} · {{ group.name }}</h1>
+          <p class="lead compact">左侧填写数据，右侧同步查看当前组折线图。</p>
+        </div>
+      </div>
+
+      <form id="record-form" class="record-form" action="/student/record" method="post">
+        <div class="form-meta">
+          <label class="date-field">
+            <span>日期</span>
+            <input type="date" name="record_date" value="{{ record_date }}" required />
+          </label>
+          <button class="primary-button" type="submit">保存并生成折线图</button>
+        </div>
+
+        <div class="table-wrap">
+          <table class="record-table">
+            <thead>
+              <tr>
+                <th></th>
+                <th>凉水温度</th>
+                <th>热水温度</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for point in time_points %}
+              <tr>
+                <th>{{ point }}分钟</th>
+                <td>
+                  <input
+                    type="number"
+                    inputmode="decimal"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    name="cool_{{ point }}"
+                    value="{{ initial_values.get('cool_' ~ point, '') }}"
+                    required
+                  />
+                </td>
+                <td>
+                  <input
+                    type="number"
+                    inputmode="decimal"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    name="hot_{{ point }}"
+                    value="{{ initial_values.get('hot_' ~ point, '') }}"
+                    required
+                  />
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <p id="save-status" class="status-line" aria-live="polite"></p>
+      </form>
+    </section>
+
+    <section class="panel chart-panel">
+      <div class="page-header compact">
+        <div>
+          <p class="eyebrow">折线图</p>
+          <h2>当前小组温度变化</h2>
+        </div>
+      </div>
+      <div
+        id="student-chart"
+        class="chart-stage large"
+        data-student-chart
+        data-chart='{{ chart_payload | tojson }}'
+      ></div>
+    </section>
+  </section>
+</main>
+{% endblock %}

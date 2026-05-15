@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}温度记录课堂系统{% endblock %}</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%232563eb'/%3E%3Cpath d='M24 14v24.5A11.5 11.5 0 1 0 30 48V14h-6Zm10 0v10h6V14h-6Z' fill='white'/%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="{{ url_for('static', path='/styles.css') }}" />
+    <script src="{{ url_for('static', path='/app.js') }}" defer></script>
+  </head>
+  <body class="{% block body_class %}{% endblock %}">
+    {% block content %}{% endblock %}
+  </body>
+</html>

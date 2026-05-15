@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}老师总览{% endblock %}
+
+{% block body_class %}teacher-body{% endblock %}
+
+{% block content %}
+<main class="teacher-page">
+  <section
+    class="teacher-screen teacher-screen-light"
+    data-teacher-dashboard
+    data-current-classroom-id="{{ current_classroom.id }}"
+    data-student-entry-link="{{ student_entry_path }}"
+    style="--teacher-grid-columns: {{ grid_columns }};"
+  >
+    <header class="teacher-header">
+      <div>
+        <p class="eyebrow">教师界面</p>
+        <h1>{{ current_classroom.name }}</h1>
+        <p class="teacher-summary">
+          {{ current_classroom.group_count }} 个小组 · 白板投屏版实时总览
+        </p>
+      </div>
+      <div class="teacher-header-actions">
+        <a class="text-link" href="/teacher/classrooms/new">新建班级</a>
+        <a class="text-link" href="/teacher/logout">退出</a>
+      </div>
+    </header>
+
+    <section class="teacher-toolbar">
+      <form class="teacher-inline-form" action="/teacher/classrooms/select" method="post">
+        <label>
+          <span>切换班级</span>
+          <select name="classroom_id">
+            {% for classroom in classrooms %}
+            <option
+              value="{{ classroom.id }}"
+              {% if classroom.id == current_classroom.id %}selected{% endif %}
+            >
+              {{ classroom.name }}
+            </option>
+            {% endfor %}
+          </select>
+        </label>
+        <button class="secondary-button" type="submit">切换</button>
+      </form>
+    </section>
+
+    <div class="teacher-grid">
+      {% for item in dashboard_items %}
+      <article
+        class="chart-card chart-card-light"
+        data-chart-card
+        data-group-id="{{ item.id }}"
+        data-chart='{{ item.chart | tojson }}'
+      >
+        <div class="chart-card-header">
+          <h2>{{ item.name }}</h2>
+          <p class="chart-date" data-chart-date>{{ item.record_date }}</p>
+        </div>
+        <div class="chart-stage" data-chart-stage></div>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+</main>
+{% endblock %}

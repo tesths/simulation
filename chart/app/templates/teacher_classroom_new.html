@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}新建班级{% endblock %}
+
+{% block content %}
+<main
+  class="page-shell teacher-classroom-shell"
+  data-current-classroom-id="{{ current_classroom.id }}"
+  {% if created %}data-student-entry-link="{{ student_entry_path }}"{% endif %}
+>
+  <section class="panel teacher-classroom-panel">
+    <div class="page-header">
+      <div>
+        <p class="eyebrow">班级管理</p>
+        <h1>新建班级</h1>
+        <p class="lead">创建班级后，系统会自动生成对应组数和学生专属入口链接。</p>
+      </div>
+      <div class="teacher-header-actions">
+        <a class="text-link" href="/teacher/dashboard">返回总览</a>
+        <a class="text-link" href="/teacher/logout">退出</a>
+      </div>
+    </div>
+
+    {% if created %}
+    <p class="success-line">班级已创建，可以直接把下面的学生链接发出去。</p>
+    {% endif %}
+
+    <form class="teacher-create-page-form" action="/teacher/classrooms" method="post">
+      <label>
+        <span>班级名称</span>
+        <input type="text" name="name" placeholder="例如：公开课一班" required />
+      </label>
+      <label>
+        <span>组数</span>
+        <input
+          type="number"
+          name="group_count"
+          min="1"
+          max="20"
+          value="{{ group_count_value }}"
+          required
+        />
+      </label>
+      <button class="primary-button" type="submit">创建班级</button>
+    </form>
+
+    {% if created %}
+    <section class="teacher-link-panel standalone">
+      <div>
+        <p class="eyebrow">当前学生链接</p>
+        <p class="teacher-link-note">当前班级：{{ current_classroom.name }}。学生打开后，只会在这个班级里选择自己的组。</p>
+      </div>
+      <a class="entry-link-pill" href="{{ student_entry_path }}">{{ student_entry_url }}</a>
+    </section>
+    {% else %}
+    <p class="helper-line">创建后，这里会显示学生专属链接。</p>
+    {% endif %}
+  </section>
+</main>
+{% endblock %}
