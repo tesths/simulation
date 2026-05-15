@@ -292,10 +292,6 @@ export const runHeatTransferSimulation = (config: SimulationConfig): SimulationP
       timeSec: step * config.dtSec,
       ...temperatures,
     })
-
-    if (temperatures.waterTempC === config.ambientTempC && temperatures.milkTempC === config.ambientTempC) {
-      break
-    }
   }
 
   return points

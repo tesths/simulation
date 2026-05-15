@@ -56,5 +56,5 @@ export const createTimeTicksForRange = (
   ticks[0] = startTimeSec
   ticks[ticks.length - 1] = endTimeSec
 
-  return ticks
+  return Array.from(new Set(ticks))
 }

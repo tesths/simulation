@@ -19,8 +19,8 @@ const mixHexColor = (from: string, to: string, ratio: number) => {
 const getWaterColor = (temperatureC: number) =>
   mixHexColor('#75b3ef', '#ec9051', (temperatureC - 25) / 35)
 
-const getMilkColor = (temperatureC: number) =>
-  mixHexColor('#d6e2ff', '#fbe6bb', (temperatureC - 20) / 40)
+const getTubeWaterColor = (temperatureC: number) =>
+  mixHexColor('#a9ddff', '#f3bb84', (temperatureC - 20) / 40)
 
 interface LaboratorySceneProps {
   config: SimulationConfig
@@ -34,10 +34,13 @@ interface ThermometerProps {
   width: number
   bulbRadius: number
   temperatureC: number
+  scaleMinC: number
+  scaleMaxC: number
   columnColor: string
   labelX: number
   labelY: number
   labelAlign?: 'start' | 'end'
+  scaleSide?: 'left' | 'right'
 }
 
 const Thermometer = ({
@@ -47,15 +50,19 @@ const Thermometer = ({
   width,
   bulbRadius,
   temperatureC,
+  scaleMinC,
+  scaleMaxC,
   columnColor,
   labelX,
   labelY,
   labelAlign = 'start',
+  scaleSide = 'right',
 }: ThermometerProps) => {
   const bulbCenterY = bottomY - bulbRadius
   const stemBottomY = bulbCenterY - bulbRadius * 0.88
   const stemHeight = stemBottomY - topY
-  const fillRatio = clamp(temperatureC / 65, 0, 1)
+  const scaleRangeC = Math.max(scaleMaxC - scaleMinC, 1)
+  const fillRatio = clamp((temperatureC - scaleMinC) / scaleRangeC, 0, 1)
   const fillHeight = Math.max(stemHeight * fillRatio, width * 0.9)
   const fillTopY = stemBottomY - fillHeight
   const thermometerLeft = x - width / 2
@@ -63,9 +70,28 @@ const Thermometer = ({
   const capillaryLeft = x - capillaryWidth / 2
   const backingWidth = Math.max(width * 0.58, capillaryWidth + 2)
   const backingLeft = x - backingWidth / 2
-  const tickStartY = topY + 12
-  const tickGap = stemHeight / 6.4
-  const tickRightX = thermometerLeft + width + 4
+  const majorTickStepC = 10
+  const majorTicks = Array.from(
+    { length: Math.floor(scaleRangeC / majorTickStepC) + 1 },
+    (_, index) => scaleMinC + index * majorTickStepC,
+  ).filter((tickValue) => tickValue <= scaleMaxC)
+  const minorTicks = majorTicks.flatMap((tickValue, index) => {
+    const nextTickValue = majorTicks[index + 1]
+
+    if (nextTickValue === undefined) {
+      return []
+    }
+
+    const midpointTickValue = tickValue + majorTickStepC / 2
+
+    return midpointTickValue < nextTickValue ? [midpointTickValue] : []
+  })
+  const scaleDirection = scaleSide === 'right' ? 1 : -1
+  const scaleTickStartX = x + scaleDirection * (width / 2 + 4)
+  const scaleLabelX = x + scaleDirection * (width / 2 + 18)
+  const scaleTextAnchor = scaleSide === 'right' ? 'start' : 'end'
+  const getTickY = (tickValue: number) =>
+    stemBottomY - ((tickValue - scaleMinC) / scaleRangeC) * stemHeight
 
   return (
     <g className="thermometer">
@@ -126,17 +152,45 @@ const Thermometer = ({
         strokeWidth={Math.max(width * 0.16, 1.4)}
         strokeLinecap="round"
       />
-      <path
-        d={Array.from({ length: 7 }, (_, index) => {
-          const tickY = tickStartY + index * tickGap
-          const tickLength = index % 2 === 0 ? 7 : 4.2
+      <g className="thermometer-scale" aria-hidden="true">
+        {minorTicks.map((tickValue) => {
+          const tickY = getTickY(tickValue)
 
-          return `M${tickRightX} ${tickY} h${tickLength}`
-        }).join(' ')}
-        stroke="rgba(108, 89, 66, 0.52)"
-        strokeWidth="1.2"
-        strokeLinecap="round"
-      />
+          return (
+            <path
+              key={`minor-${tickValue}`}
+              d={`M${scaleTickStartX} ${tickY} h${scaleDirection * 4.5}`}
+              fill="none"
+              stroke="rgba(108, 89, 66, 0.42)"
+              strokeWidth="1"
+              strokeLinecap="round"
+            />
+          )
+        })}
+        {majorTicks.map((tickValue) => {
+          const tickY = getTickY(tickValue)
+
+          return (
+            <g key={`major-${tickValue}`}>
+              <path
+                d={`M${scaleTickStartX} ${tickY} h${scaleDirection * 8}`}
+                fill="none"
+                stroke="rgba(108, 89, 66, 0.58)"
+                strokeWidth="1.2"
+                strokeLinecap="round"
+              />
+              <text
+                x={scaleLabelX}
+                y={tickY + 3}
+                textAnchor={scaleTextAnchor}
+                className="thermometer-scale-label"
+              >
+                {tickValue}
+              </text>
+            </g>
+          )
+        })}
+      </g>
       <g transform={`translate(${labelX}, ${labelY})`}>
         <rect
           x={labelAlign === 'start' ? 0 : -72}
@@ -161,6 +215,12 @@ const Thermometer = ({
 }
 
 export const LaboratoryScene = ({ config, currentPoint }: LaboratorySceneProps) => {
+  const thermometerScaleMinC =
+    Math.floor(
+      Math.min(config.ambientTempC, config.milk.initialTempC, config.water.initialTempC) / 10,
+    ) * 10
+  const thermometerScaleMaxC =
+    Math.ceil(Math.max(config.water.initialTempC, config.milk.initialTempC) / 10) * 10
   const beakerFillRatio = clamp(
     config.beaker.wettedLengthM / config.beaker.totalHeightM,
     0.18,
@@ -179,25 +239,26 @@ export const LaboratoryScene = ({ config, currentPoint }: LaboratorySceneProps) 
 
   const beakerInnerTopY = 66
   const beakerInnerBottomY = 302
+  const beakerFillBottomY = 318
   const beakerInnerHeight = beakerInnerBottomY - beakerInnerTopY
   const waterTopY = beakerInnerBottomY - beakerInnerHeight * beakerFillRatio
 
   const tubeInnerTopY = 26
   const tubeInnerBottomY = 272
   const tubeInnerHeight = tubeInnerBottomY - tubeInnerTopY
-  const milkTopY = tubeInnerBottomY - tubeInnerHeight * tubeFillRatio
+  const tubeWaterTopY = tubeInnerBottomY - tubeInnerHeight * tubeFillRatio
   const immersionTopY = tubeInnerBottomY - tubeInnerHeight * immersedRatio
 
   const waterColor = getWaterColor(currentPoint.waterTempC)
-  const milkColor = getMilkColor(currentPoint.milkTempC)
+  const tubeWaterColor = getTubeWaterColor(currentPoint.milkTempC)
 
   return (
     <div className="scene-stack">
       <svg
         className="laboratory-scene"
-        viewBox="16 -4 382 320"
+        viewBox="16 -4 382 336"
         role="img"
-        aria-label="带实时温度计的烧杯和试管温度模拟"
+        aria-label="带实时温度计的烧杯水和试管水温度模拟"
       >
         <defs>
           <linearGradient id="glassSheen" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -218,15 +279,15 @@ export const LaboratoryScene = ({ config, currentPoint }: LaboratorySceneProps) 
         </defs>
 
         <rect x="0" y="0" width="420" height="340" rx="30" fill="#f7edd9" />
-        <ellipse cx="210" cy="308" rx="144" ry="17" fill="rgba(72, 50, 31, 0.12)" />
-        <rect x="84" y="300" width="252" height="16" rx="8" fill="url(#benchGlow)" />
+        <ellipse cx="210" cy="322" rx="144" ry="12" fill="rgba(72, 50, 31, 0.12)" />
+        <rect x="84" y="318" width="252" height="12" rx="6" fill="url(#benchGlow)" />
 
         <g clipPath="url(#beakerClip)">
           <rect
             x="116"
             y={waterTopY}
             width="188"
-            height={beakerInnerBottomY - waterTopY}
+            height={beakerFillBottomY - waterTopY}
             fill={waterColor}
             opacity="0.72"
           />
@@ -236,13 +297,19 @@ export const LaboratoryScene = ({ config, currentPoint }: LaboratorySceneProps) 
         <g clipPath="url(#tubeClip)">
           <rect
             x="228"
-            y={milkTopY}
+            y={tubeWaterTopY}
             width="30"
-            height={tubeInnerBottomY - milkTopY}
-            fill={milkColor}
+            height={tubeInnerBottomY - tubeWaterTopY}
+            fill={tubeWaterColor}
             opacity="0.92"
           />
-          <rect x="228" y={milkTopY - 3} width="30" height="6" fill="rgba(255,255,255,0.58)" />
+          <rect
+            x="228"
+            y={tubeWaterTopY - 3}
+            width="30"
+            height="6"
+            fill="rgba(255,255,255,0.58)"
+          />
         </g>
 
         <rect
@@ -298,10 +365,13 @@ export const LaboratoryScene = ({ config, currentPoint }: LaboratorySceneProps) 
           width={12}
           bulbRadius={10}
           temperatureC={currentPoint.waterTempC}
+          scaleMinC={thermometerScaleMinC}
+          scaleMaxC={thermometerScaleMaxC}
           columnColor="#c45f2f"
           labelX={104}
           labelY={78}
           labelAlign="end"
+          scaleSide="right"
         />
 
         <Thermometer
@@ -311,9 +381,12 @@ export const LaboratoryScene = ({ config, currentPoint }: LaboratorySceneProps) 
           width={7}
           bulbRadius={6}
           temperatureC={currentPoint.milkTempC}
+          scaleMinC={thermometerScaleMinC}
+          scaleMaxC={thermometerScaleMaxC}
           columnColor="#708fc2"
           labelX={290}
           labelY={78}
+          scaleSide="left"
         />
 
         <g className="scene-annotation">
@@ -325,13 +398,13 @@ export const LaboratoryScene = ({ config, currentPoint }: LaboratorySceneProps) 
 
         <g className="scene-annotation">
           <text x="304" y="38" className="scene-label">
-            试管牛奶
+            试管水
           </text>
           <path d="M296 44 C278 52 264 78 252 112" fill="none" stroke="#7d6b4a" strokeWidth="2" />
         </g>
 
         <g className="scene-annotation">
-          <text x="286" y="296" className="scene-label ambient-label">
+          <text x="316" y="292" className="scene-label ambient-label">
             室温 {config.ambientTempC.toFixed(0)}°C
           </text>
         </g>

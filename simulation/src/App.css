@@ -171,18 +171,23 @@ code {
   font-weight: 700;
 }
 
-.chart-shell {
-  min-height: 0;
-  display: grid;
-  grid-template-rows: minmax(0, 1fr) 120px;
-  gap: 10px;
+.thermometer-scale-label {
+  fill: #765a3d;
+  font-size: 9px;
+  font-weight: 700;
 }
 
-.chart-focus,
+.chart-shell {
+  min-height: 0;
+  height: 100%;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+}
+
 .chart-overview {
   min-height: 0;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
   padding: 10px 12px 8px;
   border-radius: 18px;
   background: rgba(255, 252, 246, 0.86);
@@ -194,7 +199,7 @@ code {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   color: #6a543c;
   font-size: 0.82rem;
 }
@@ -202,6 +207,44 @@ code {
 .chart-caption strong {
   color: #3f301f;
   font-size: 0.88rem;
+}
+
+.chart-key {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 2px;
+  color: #6a543c;
+  font-size: 0.73rem;
+}
+
+.chart-key-item,
+.chart-key-gap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chart-key-gap {
+  color: #81644b;
+  font-weight: 600;
+}
+
+.chart-key-line {
+  width: 20px;
+  height: 0;
+  border-top: 3px solid currentColor;
+  border-radius: 999px;
+}
+
+.chart-key-line.water {
+  color: #ca6930;
+}
+
+.chart-key-line.milk {
+  color: #6d8fc7;
+  border-top-style: dashed;
 }
 
 .control-strip {

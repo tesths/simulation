@@ -10,12 +10,12 @@ const WATER_PROPERTIES: FluidProperties = {
   prandtlNumber: 4.36,
 }
 
-const MILK_PROPERTIES: FluidProperties = {
-  thermalConductivityWPerMK: 0.53,
-  kinematicViscosityM2PerS: 1.1e-6,
-  thermalDiffusivityM2PerS: 0.133e-6,
-  thermalExpansionPerK: 0.00033,
-  prandtlNumber: 8.3,
+const TEST_TUBE_WATER_PROPERTIES: FluidProperties = {
+  thermalConductivityWPerMK: 0.628,
+  kinematicViscosityM2PerS: 1.004e-6,
+  thermalDiffusivityM2PerS: 0.145e-6,
+  thermalExpansionPerK: 0.00021,
+  prandtlNumber: 6.93,
 }
 
 const AIR_PROPERTIES: FluidProperties = {
@@ -39,16 +39,16 @@ export const createDefaultExperimentConfig = (): SimulationConfig => {
   const tubeOuterRadiusM = 0.009
   const tubeWallThicknessM = 0.0015
   const tubeInnerRadiusM = tubeOuterRadiusM - tubeWallThicknessM
-  const milkVolumeM3 = 10e-6
-  const milkHeightM = milkVolumeM3 / (PI * tubeInnerRadiusM ** 2)
-  const immersedLengthM = Math.min(waterHeightM, milkHeightM)
-  const exposedLengthM = Math.max(milkHeightM - immersedLengthM, 0)
+  const testTubeWaterVolumeM3 = 10e-6
+  const testTubeWaterHeightM = testTubeWaterVolumeM3 / (PI * tubeInnerRadiusM ** 2)
+  const immersedLengthM = Math.min(waterHeightM, testTubeWaterHeightM)
+  const exposedLengthM = Math.max(testTubeWaterHeightM - immersedLengthM, 0)
 
   const waterMassKg = 997 * waterVolumeM3
-  const milkMassKg = 1030 * milkVolumeM3
+  const testTubeWaterMassKg = 997 * testTubeWaterVolumeM3
 
   const testTubeGlassVolumeM3 =
-    PI * (tubeOuterRadiusM ** 2 - tubeInnerRadiusM ** 2) * milkHeightM +
+    PI * (tubeOuterRadiusM ** 2 - tubeInnerRadiusM ** 2) * testTubeWaterHeightM +
     PI * tubeOuterRadiusM ** 2 * tubeWallThicknessM
 
   const beakerGlassVolumeM3 =
@@ -57,7 +57,7 @@ export const createDefaultExperimentConfig = (): SimulationConfig => {
 
   return {
     ambientTempC: 25,
-    durationSec: 72 * 60 * 60,
+    durationSec: 24 * 60 * 60,
     dtSec: 5,
     equilibriumToleranceC: 0.05,
     water: {
@@ -70,11 +70,11 @@ export const createDefaultExperimentConfig = (): SimulationConfig => {
     },
     milk: {
       initialTempC: 20,
-      massKg: milkMassKg,
-      specificHeatJPerKgK: 3930,
+      massKg: testTubeWaterMassKg,
+      specificHeatJPerKgK: 4180,
       freeSurfaceAreaM2: PI * tubeInnerRadiusM ** 2,
       surfaceLengthM: 2 * tubeInnerRadiusM,
-      properties: MILK_PROPERTIES,
+      properties: TEST_TUBE_WATER_PROPERTIES,
     },
     testTube: {
       initialTempC: 20,
@@ -83,12 +83,12 @@ export const createDefaultExperimentConfig = (): SimulationConfig => {
       conductivityWPerMK: 1.1,
       wallThicknessM: tubeWallThicknessM,
       innerContactAreaM2:
-        2 * PI * tubeInnerRadiusM * milkHeightM + PI * tubeInnerRadiusM ** 2,
+        2 * PI * tubeInnerRadiusM * testTubeWaterHeightM + PI * tubeInnerRadiusM ** 2,
       immersedOuterAreaM2:
         2 * PI * tubeOuterRadiusM * immersedLengthM + PI * tubeOuterRadiusM ** 2,
       exposedOuterAreaM2: 2 * PI * tubeOuterRadiusM * exposedLengthM,
       totalLengthM: tubeTotalLengthM,
-      milkLengthM: milkHeightM,
+      milkLengthM: testTubeWaterHeightM,
       immersedLengthM,
       exposedLengthM,
     },
