@@ -4,7 +4,7 @@
 
 - 教师端：固定密码登录，创建班级、设置组数、生成学生专属链接，并在 16:9 大屏中查看各组实时曲线
 - 学生端：不提供公共登录入口，只能通过老师发送的班级专属链接进入，选择本组后填写温度记录
-- 后端：FastAPI + SQLite + WebSocket（更新通知）+ HTTP（拉取最新图表数据）
+- 后端：FastAPI + SQLAlchemy + SQLite / Postgres + WebSocket（更新通知）+ HTTP（拉取最新图表数据）
 
 ## 当前使用方式
 
@@ -33,11 +33,22 @@
 python3 -m pip install -r requirements.txt
 ```
 
-启动服务：
+本地默认使用 SQLite 启动服务：
 
 ```bash
 TEACHER_PASSWORD='请改成老师密码' \
 SECRET_KEY='请改成随机长字符串' \
+SESSION_COOKIE_SECURE='false' \
+python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+如果你要在本地直接连 Postgres，可以改为：
+
+```bash
+DATABASE_URL='postgresql+psycopg://user:password@host:5432/chart' \
+TEACHER_PASSWORD='请改成老师密码' \
+SECRET_KEY='请改成随机长字符串' \
+SESSION_COOKIE_SECURE='false' \
 python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
@@ -60,7 +71,9 @@ python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 - `TEACHER_PASSWORD`：老师登录密码
 - `SECRET_KEY`：Session 签名密钥
+- `DATABASE_URL`：生产优先使用的数据库连接串，支持 Postgres，也可用于 SQLite URL
 - `DATABASE_PATH`：SQLite 数据库路径，默认是 `data/classroom.sqlite3`
+- `SESSION_COOKIE_SECURE`：是否给 Session Cookie 加 `Secure` 标记，生产应设为 `true`
 
 ## 测试
 

@@ -13,6 +13,7 @@ python3 -m pip install -r requirements.txt
 ```bash
 TEACHER_PASSWORD='teacher123' \
 SECRET_KEY='dev-secret-change-me' \
+SESSION_COOKIE_SECURE='false' \
 python3 -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
@@ -20,10 +21,20 @@ python3 -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 - `data/classroom.sqlite3`
 
-如果你想用独立数据库做实验，可以覆盖：
+如果你想用独立 SQLite 数据库做实验，可以覆盖：
 
 ```bash
 DATABASE_PATH='data/my-feature.sqlite3' python3 -m uvicorn app.main:app --reload
+```
+
+如果你想直接联调 Postgres，可以改为：
+
+```bash
+DATABASE_URL='postgresql+psycopg://user:password@host:5432/chart' \
+TEACHER_PASSWORD='teacher123' \
+SECRET_KEY='dev-secret-change-me' \
+SESSION_COOKIE_SECURE='false' \
+python3 -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 ## 当前页面与入口规则
@@ -74,7 +85,7 @@ python3 -m playwright install chromium
 新增功能时，通常先看这些文件：
 
 - `app/main.py`：主路由、页面流程、Session、WebSocket 入口
-- `app/db.py`：数据库结构、迁移、查询和保存逻辑
+- `app/db.py`：数据库结构、SQLite 旧库迁移、查询和保存逻辑
 - `app/schemas.py`：表单字段与图表 payload
 - `app/realtime.py`：老师端实时广播
 - `app/templates/student_login.html`：班级专属选组页
@@ -152,9 +163,9 @@ python3 -m playwright install chromium
 最重要的几个事实：
 
 - 当前建议单个 Uvicorn worker 部署
-- SQLite 数据目录必须持久化
-- 反向代理必须支持 `/ws/teacher` 的 WebSocket 升级
-- 当前 `SessionMiddleware` 仍是开发态 Cookie 配置，公网前应收紧
+- 生产数据库应使用 `DATABASE_URL` 指向 Postgres
+- Zeabur / 反向代理必须支持 `/ws/teacher` 的 WebSocket 升级
+- 生产必须把 `SESSION_COOKIE_SECURE` 设为 `true`
 
 ## 文档维护约定
 

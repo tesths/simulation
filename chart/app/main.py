@@ -63,7 +63,7 @@ def _build_dashboard_items(
     classroom_id: int,
 ) -> list[dict[str, object]]:
     items: list[dict[str, object]] = []
-    for row in list_groups_with_records(settings.database_path, classroom_id):
+    for row in list_groups_with_records(settings.database_target, classroom_id):
         group = {"id": int(row["id"]), "name": str(row["name"])}
         record = row if row["record_date"] else None
         chart = _build_chart_payload(group, record)
@@ -112,12 +112,12 @@ def _resolve_current_classroom(
     classroom_id = request.session.get("teacher_current_classroom_id")
     classroom = None
     if classroom_id:
-        classroom = get_classroom(settings.database_path, int(classroom_id))
+        classroom = get_classroom(settings.database_target, int(classroom_id))
 
     if classroom:
         return classroom
 
-    classrooms = list_classrooms(settings.database_path)
+    classrooms = list_classrooms(settings.database_target)
     if not classrooms:
         raise HTTPException(status_code=500, detail="未找到可用班级")
 
@@ -147,14 +147,14 @@ def _teacher_classroom_page_context(
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or Settings()
-    ensure_database(settings.database_path)
+    ensure_database(settings.database_target)
     base_dir = Path(__file__).resolve().parent
     templates = Jinja2Templates(directory=str(base_dir / "templates"))
     realtime_manager = TeacherConnectionManager()
 
     @asynccontextmanager
     async def lifespan(_: FastAPI):
-        ensure_database(settings.database_path)
+        ensure_database(settings.database_target)
         yield
 
     app = FastAPI(title="温度记录课堂系统", lifespan=lifespan)
@@ -162,7 +162,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         SessionMiddleware,
         secret_key=settings.secret_key,
         same_site="lax",
-        https_only=False,
+        https_only=settings.session_cookie_secure,
     )
     app.mount("/static", StaticFiles(directory=str(base_dir / "static")), name="static")
     app.state.settings = settings
@@ -194,11 +194,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         request: Request,
         classroom_slug: str,
     ) -> HTMLResponse:
-        classroom = get_classroom_by_slug(settings.database_path, classroom_slug)
+        classroom = get_classroom_by_slug(settings.database_target, classroom_slug)
         if not classroom:
             raise HTTPException(status_code=404, detail="未找到对应班级")
 
-        groups = list_groups(settings.database_path, int(classroom["id"]))
+        groups = list_groups(settings.database_target, int(classroom["id"]))
         return templates.TemplateResponse(
             request,
             "student_login.html",
@@ -215,12 +215,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         classroom_slug: str,
         group_id: int = Form(...),
     ) -> RedirectResponse:
-        classroom = get_classroom_by_slug(settings.database_path, classroom_slug)
+        classroom = get_classroom_by_slug(settings.database_target, classroom_slug)
         if not classroom:
             raise HTTPException(status_code=404, detail="未找到对应班级")
 
         group = get_group_in_classroom(
-            settings.database_path,
+            settings.database_target,
             int(classroom["id"]),
             group_id,
         )
@@ -257,14 +257,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             return _student_redirect()
 
         group = get_group_in_classroom(
-            settings.database_path,
+            settings.database_target,
             int(classroom_id),
             int(group_id),
         )
         if not group:
             return _student_redirect()
 
-        record = get_record(settings.database_path, int(group_id))
+        record = get_record(settings.database_target, int(group_id))
         chart_payload = _build_chart_payload(group, record)
         initial_values = {
             key: record[key]
@@ -333,7 +333,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
 
         group = get_group_in_classroom(
-            settings.database_path,
+            settings.database_target,
             int(classroom_id),
             int(group_id),
         )
@@ -341,12 +341,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             raise HTTPException(status_code=404, detail="未找到对应小组")
 
         save_record(
-            settings.database_path,
+            settings.database_target,
             int(group_id),
             submission.record_date.isoformat(),
             submission.value_map(),
         )
-        record = get_record(settings.database_path, int(group_id))
+        record = get_record(settings.database_target, int(group_id))
         payload = _build_chart_payload(group, record)
         await realtime_manager.broadcast_group_update(
             int(classroom_id),
@@ -397,7 +397,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         created = False
         classroom_for_page = current_classroom
         if created_classroom_id is not None:
-            created_classroom = get_classroom(settings.database_path, created_classroom_id)
+            created_classroom = get_classroom(settings.database_target, created_classroom_id)
             if created_classroom:
                 classroom_for_page = created_classroom
                 request.session["teacher_current_classroom_id"] = int(created_classroom["id"])
@@ -432,7 +432,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             )
 
         classroom = create_classroom(
-            settings.database_path,
+            settings.database_target,
             classroom_name,
             group_count,
         )
@@ -448,7 +448,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         classroom_id: int = Form(...),
     ) -> RedirectResponse:
         _require_teacher_auth(request)
-        classroom = get_classroom(settings.database_path, classroom_id)
+        classroom = get_classroom(settings.database_target, classroom_id)
         if not classroom:
             raise HTTPException(status_code=404, detail="未找到对应班级")
 
@@ -472,7 +472,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "teacher_dashboard.html",
             {
                 "request": request,
-                "classrooms": list_classrooms(settings.database_path),
+                "classrooms": list_classrooms(settings.database_target),
                 "current_classroom": current_classroom,
                 "grid_columns": _dashboard_grid_columns(
                     int(current_classroom["group_count"])
@@ -484,11 +484,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.get("/api/charts/group/{group_id}")
     async def group_chart(group_id: int) -> JSONResponse:
-        group = get_group(settings.database_path, group_id)
+        group = get_group(settings.database_target, group_id)
         if not group:
             raise HTTPException(status_code=404, detail="未找到对应小组")
 
-        record = get_record(settings.database_path, group_id)
+        record = get_record(settings.database_target, group_id)
         return JSONResponse(_build_chart_payload(group, record))
 
     @app.websocket("/ws/teacher")

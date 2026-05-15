@@ -32,7 +32,7 @@ def wait_for_server(base_url: str, timeout_seconds: float = 15.0) -> None:
 
 
 @pytest.fixture()
-def live_server(tmp_path: Path, unused_tcp_port: int) -> str:
+def live_server(tmp_path: Path, free_tcp_port: int) -> str:
     database_path = tmp_path / "browser-e2e.sqlite3"
     env = os.environ.copy()
     env["DATABASE_PATH"] = str(database_path)
@@ -47,7 +47,7 @@ def live_server(tmp_path: Path, unused_tcp_port: int) -> str:
         "--host",
         "127.0.0.1",
         "--port",
-        str(unused_tcp_port),
+        str(free_tcp_port),
         "--log-level",
         "warning",
     ]
@@ -59,7 +59,7 @@ def live_server(tmp_path: Path, unused_tcp_port: int) -> str:
         stderr=subprocess.STDOUT,
         text=True,
     )
-    base_url = f"http://127.0.0.1:{unused_tcp_port}"
+    base_url = f"http://127.0.0.1:{free_tcp_port}"
 
     try:
         wait_for_server(base_url)

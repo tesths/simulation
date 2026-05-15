@@ -21,6 +21,30 @@ def client(tmp_path: Path) -> TestClient:
     return TestClient(app)
 
 
+def test_sqlite_database_url_mode_and_secure_session_cookie(tmp_path: Path) -> None:
+    database_file = tmp_path / "classroom-url.sqlite3"
+    settings = Settings(
+        database_url=f"sqlite+pysqlite:///{database_file.resolve().as_posix()}",
+        secret_key="test-secret",
+        teacher_password="teach-pass",
+        session_cookie_secure=True,
+    )
+    app = create_app(settings)
+    client = TestClient(app)
+
+    response = client.post(
+        "/teacher/login",
+        data={"password": "teach-pass"},
+        follow_redirects=False,
+    )
+
+    assert response.status_code in {302, 303}
+    assert "secure" in response.headers["set-cookie"].lower()
+    dashboard = client.get("/teacher/dashboard")
+    assert dashboard.status_code == 200
+    assert database_file.exists()
+
+
 def login_teacher(client: TestClient, password: str = "teach-pass") -> None:
     response = client.post(
         "/teacher/login",

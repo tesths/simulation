@@ -7,7 +7,7 @@
 主要职责：
 
 - 服务端渲染教师页、学生说明页、班级选组页、学生填写页
-- 使用 SQLite 保存班级、小组和每组当前实验记录
+- 使用 SQLAlchemy 保存班级、小组和每组当前实验记录，支持 SQLite 与 Postgres
 - 使用 Cookie Session 维护老师登录状态与学生当前班级/小组状态
 - 使用 WebSocket 向老师端广播“某个班级中的某个组已更新”
 - 浏览器端使用原生 JavaScript + SVG 渲染折线图
@@ -18,7 +18,7 @@
 
 - 后端框架：FastAPI
 - 模板：Jinja2
-- 数据库：SQLite
+- 数据库：SQLite / Postgres（通过 SQLAlchemy 统一访问）
 - 实时通信：WebSocket
 - 前端：原生 JavaScript
 - 图表：原生 SVG
@@ -41,8 +41,9 @@
 负责：
 
 - 初始化数据库
-- 旧版单班级数据库迁移
+- 旧版 SQLite 单班级数据库迁移
 - 班级、小组、当前记录的增删查改
+- 统一的 SQLite / Postgres 数据访问
 
 ### `app/schemas.py`
 
@@ -131,7 +132,7 @@
 代价：
 
 - 实时广播依赖当前应用进程内存中的连接管理器
-- 如果以后要做多实例部署，需要共享消息总线（如 Redis pub/sub）
+- 如果以后要做多实例部署，即使数据库切到 Postgres，也需要共享消息总线（如 Redis pub/sub）
 
 ## 路由清单
 
@@ -242,11 +243,10 @@
 - 现在更像课堂场景下的私有入口
 - 如果以后公网长期使用，建议补邀请码、一次性令牌或更强鉴权
 
-### 4. Session Cookie 仍然是开发态配置
+### 4. Session Cookie 需要按环境收紧
 
-- `https_only=False`
-- 本地开发方便
-- 公网正式部署前建议改成 HTTPS + 更严格 Cookie 配置
+- 本地开发可用 `SESSION_COOKIE_SECURE=false`
+- 公网正式部署时应使用 HTTPS + `SESSION_COOKIE_SECURE=true`
 
 ## 后续扩展入口
 
