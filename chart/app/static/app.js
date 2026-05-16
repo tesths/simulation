@@ -24,6 +24,14 @@
   ];
   const OVERLAY_EXPAND_LABEL = "查看全班叠加图";
   const OVERLAY_COLLAPSE_LABEL = "收起全班叠加图";
+  const OVERLAY_GROUP_MARKERS = [
+    "circle",
+    "square",
+    "diamond",
+    "triangle",
+    "triangle-invert",
+    "hexagon",
+  ];
 
   function createSvgElement(name, attributes = {}) {
     const element = document.createElementNS("http://www.w3.org/2000/svg", name);
@@ -267,6 +275,76 @@
     return OVERLAY_GROUP_COLORS[index % OVERLAY_GROUP_COLORS.length];
   }
 
+  function overlayGroupMarker(index) {
+    return OVERLAY_GROUP_MARKERS[index % OVERLAY_GROUP_MARKERS.length];
+  }
+
+  function createOverlayMarker(shape, x, y, color, radius = 4) {
+    if (shape === "square") {
+      return createSvgElement("rect", {
+        x: x - radius,
+        y: y - radius,
+        width: radius * 2,
+        height: radius * 2,
+        rx: 1.5,
+        fill: color,
+        stroke: "#ffffff",
+        "stroke-width": 1.2,
+      });
+    }
+    if (shape === "diamond") {
+      return createSvgElement("polygon", {
+        points: `${x},${y - radius} ${x + radius},${y} ${x},${y + radius} ${x - radius},${y}`,
+        fill: color,
+        stroke: "#ffffff",
+        "stroke-width": 1.2,
+      });
+    }
+    if (shape === "triangle") {
+      return createSvgElement("polygon", {
+        points: `${x},${y - radius - 0.8} ${x + radius},${y + radius} ${x - radius},${y + radius}`,
+        fill: color,
+        stroke: "#ffffff",
+        "stroke-width": 1.2,
+      });
+    }
+    if (shape === "triangle-invert") {
+      return createSvgElement("polygon", {
+        points: `${x - radius},${y - radius} ${x + radius},${y - radius} ${x},${y + radius + 0.8}`,
+        fill: color,
+        stroke: "#ffffff",
+        "stroke-width": 1.2,
+      });
+    }
+    if (shape === "hexagon") {
+      const dx = radius * 0.86;
+      const dy = radius * 0.5;
+      return createSvgElement("polygon", {
+        points: `${x - dx},${y} ${x - dx / 2},${y - radius} ${x + dx / 2},${y - radius} ${x + dx},${y} ${x + dx / 2},${y + radius} ${x - dx / 2},${y + radius}`,
+        fill: color,
+        stroke: "#ffffff",
+        "stroke-width": 1.2,
+      });
+    }
+    return createSvgElement("circle", {
+      cx: x,
+      cy: y,
+      r: radius,
+      fill: color,
+      stroke: "#ffffff",
+      "stroke-width": 1.2,
+    });
+  }
+
+  function overlayLegendLabel(group) {
+    return `${group.group_name} ${overlayGroupMarker(group.overlayIndex)}`;
+  }
+
+  function activeOverlayGroupIndex(dashboard) {
+    const value = dashboard.dataset.overlayActiveGroupIndex;
+    return value === undefined || value === "" ? null : Number(value);
+  }
+
   function readOverlayState(dashboard) {
     const groups = Array.from(
       dashboard.querySelectorAll("[data-chart-card]"),
@@ -275,7 +353,12 @@
         if (!payload) {
           return null;
         }
-        return { ...payload, overlayIndex };
+        return {
+          ...payload,
+          overlayIndex,
+          marker: overlayGroupMarker(overlayIndex),
+          color: overlayGroupColor(overlayIndex),
+        };
       },
     ).filter(Boolean);
 
@@ -283,22 +366,39 @@
       classroomName: dashboard.dataset.currentClassroomName || "当前班级",
       totalGroupCount: groups.length,
       groupsWithData: groups.filter((group) => group.has_data),
+      activeGroupIndex: activeOverlayGroupIndex(dashboard),
     };
   }
 
-  function renderOverlayLegend(container, groupsWithData) {
+  function renderOverlayLegend(container, groupsWithData, activeGroupIndex) {
     container.innerHTML = "";
     groupsWithData.forEach((group) => {
-      const item = document.createElement("span");
+      const item = document.createElement("button");
+      item.type = "button";
       item.className = "overlay-legend-item";
+      item.dataset.overlayGroupIndex = String(group.overlayIndex);
+      item.setAttribute(
+        "aria-pressed",
+        String(activeGroupIndex === group.overlayIndex),
+      );
       item.style.setProperty(
         "--overlay-group-color",
-        overlayGroupColor(group.overlayIndex),
+        group.color,
+      );
+      item.style.setProperty(
+        "--overlay-group-opacity",
+        activeGroupIndex !== null && activeGroupIndex !== group.overlayIndex
+          ? "0.45"
+          : "1",
       );
 
       const swatch = document.createElement("span");
       swatch.className = "overlay-legend-swatch";
       item.appendChild(swatch);
+
+      const marker = document.createElement("span");
+      marker.className = `overlay-legend-marker marker-${group.marker}`;
+      item.appendChild(marker);
 
       const label = document.createElement("span");
       label.textContent = group.group_name;
@@ -306,6 +406,80 @@
 
       container.appendChild(item);
     });
+  }
+
+  function distributeLabelPositions(groups, minY, maxY, gap) {
+    const placements = groups
+      .map((group) => ({
+        overlayIndex: group.overlayIndex,
+        targetY: group.labelTargetY,
+        y: group.labelTargetY,
+      }))
+      .sort((a, b) => a.targetY - b.targetY);
+
+    for (let index = 1; index < placements.length; index += 1) {
+      placements[index].y = Math.max(
+        placements[index].y,
+        placements[index - 1].y + gap,
+      );
+    }
+
+    if (placements.length) {
+      placements[placements.length - 1].y = Math.min(
+        placements[placements.length - 1].y,
+        maxY,
+      );
+      for (let index = placements.length - 2; index >= 0; index -= 1) {
+        placements[index].y = Math.min(
+          placements[index].y,
+          placements[index + 1].y - gap,
+        );
+      }
+      placements[0].y = Math.max(placements[0].y, minY);
+      for (let index = 1; index < placements.length; index += 1) {
+        placements[index].y = Math.max(
+          placements[index].y,
+          placements[index - 1].y + gap,
+        );
+      }
+    }
+
+    return new Map(placements.map((item) => [item.overlayIndex, item.y]));
+  }
+
+  function renderOverlayEndLabel(svg, group, point, labelY, groupColor, isDimmed) {
+    const labelX = point.x + 24;
+    const elbowX = point.x + 14;
+    const opacity = isDimmed ? 0.68 : 1;
+    svg.appendChild(
+      createSvgElement("polyline", {
+        points: `${point.x + 6},${point.y} ${elbowX},${point.y} ${labelX - 10},${labelY}`,
+        fill: "none",
+        stroke: groupColor,
+        "stroke-width": isDimmed ? 1.6 : 2,
+        opacity,
+        "stroke-linecap": "round",
+        "stroke-linejoin": "round",
+      }),
+    );
+
+    const labelGroup = createSvgElement("g", {
+      opacity,
+    });
+    const text = createSvgElement("text", {
+      x: labelX,
+      y: labelY + 5,
+      fill: groupColor,
+      "font-size": 13,
+      "font-weight": 800,
+      "paint-order": "stroke",
+      stroke: "rgba(255,255,255,0.96)",
+      "stroke-width": 4,
+      "stroke-linejoin": "round",
+    });
+    text.textContent = group.group_name;
+    labelGroup.appendChild(text);
+    svg.appendChild(labelGroup);
   }
 
   function renderOverlayChart(container, overlayState) {
@@ -322,9 +496,9 @@
     }
 
     const referencePayload = overlayState.groupsWithData[0];
-    const width = 1040;
+    const width = 1180;
     const height = 520;
-    const padding = { top: 24, right: 28, bottom: 64, left: 58 };
+    const padding = { top: 24, right: 170, bottom: 64, left: 58 };
     const geometry = {
       width,
       height,
@@ -353,35 +527,98 @@
 
     drawAxes(svg, referencePayload, geometry, style);
 
+    const activeGroups = [];
+    const inactiveGroups = [];
     overlayState.groupsWithData.forEach((group) => {
-      const groupColor = overlayGroupColor(group.overlayIndex);
+      if (overlayState.activeGroupIndex === group.overlayIndex) {
+        activeGroups.push(group);
+      } else {
+        inactiveGroups.push(group);
+      }
+    });
+
+    const labelGroups = [];
+    [...inactiveGroups, ...activeGroups].forEach((group) => {
+      const groupColor = group.color;
+      const isActive =
+        overlayState.activeGroupIndex === null ||
+        overlayState.activeGroupIndex === group.overlayIndex;
+      const opacity =
+        overlayState.activeGroupIndex !== null &&
+        overlayState.activeGroupIndex !== group.overlayIndex
+          ? 0.18
+          : 0.98;
+
       group.series.forEach((series) => {
         const points = buildSeriesPoints(referencePayload, series.values, geometry);
         svg.appendChild(
           createSvgElement("polyline", {
             fill: "none",
-            stroke: groupColor,
-            "stroke-width": 3,
+            stroke: "rgba(255,255,255,0.88)",
+            "stroke-width": isActive ? 6.5 : 5.5,
             "stroke-linecap": "round",
             "stroke-linejoin": "round",
             "stroke-dasharray": series.key === "hot" ? "10 8" : null,
             points: points.map(({ x, y }) => `${x},${y}`).join(" "),
+            opacity,
+          }),
+        );
+        svg.appendChild(
+          createSvgElement("polyline", {
+            fill: "none",
+            stroke: groupColor,
+            "stroke-width": isActive ? 3.8 : 2.6,
+            "stroke-linecap": "round",
+            "stroke-linejoin": "round",
+            "stroke-dasharray":
+              series.key === "hot"
+                ? group.marker === "square" || group.marker === "hexagon"
+                  ? "12 6"
+                  : "10 8"
+                : null,
+            points: points.map(({ x, y }) => `${x},${y}`).join(" "),
+            opacity,
           }),
         );
 
         points.forEach(({ x, y }) => {
-          svg.appendChild(
-            createSvgElement("circle", {
-              cx: x,
-              cy: y,
-              r: 2.6,
-              fill: groupColor,
-              stroke: "#ffffff",
-              "stroke-width": 1.2,
-            }),
+          const marker = createOverlayMarker(
+            group.marker,
+            x,
+            y,
+            groupColor,
+            isActive ? 4 : 3.1,
           );
+          marker.setAttribute("opacity", String(opacity));
+          svg.appendChild(marker);
         });
+
+        if (series.key === "cool") {
+          labelGroups.push({
+            ...group,
+            labelTargetY: points[points.length - 1].y,
+            endPoint: points[points.length - 1],
+          });
+        }
       });
+    });
+
+    const labelPositions = distributeLabelPositions(
+      labelGroups,
+      geometry.padding.top + 12,
+      geometry.height - geometry.padding.bottom - 12,
+      18,
+    );
+    labelGroups.forEach((group) => {
+      renderOverlayEndLabel(
+        svg,
+        group,
+        group.endPoint,
+        labelPositions.get(group.overlayIndex) || group.labelTargetY,
+        group.color,
+        overlayState.activeGroupIndex !== null &&
+          overlayState.activeGroupIndex !== group.overlayIndex,
+      );
     });
 
     container.appendChild(svg);
@@ -398,7 +635,11 @@
 
     const overlayState = readOverlayState(dashboard);
     summary.textContent = `已填写 ${overlayState.groupsWithData.length} / ${overlayState.totalGroupCount} 组`;
-    renderOverlayLegend(legend, overlayState.groupsWithData);
+    renderOverlayLegend(
+      legend,
+      overlayState.groupsWithData,
+      overlayState.activeGroupIndex,
+    );
 
     if (forceRenderChart || !panel.hidden) {
       renderOverlayChart(stage, overlayState);
@@ -531,6 +772,61 @@
           return;
         }
         setOverlayExpanded(dashboard, overlayPanel.hidden);
+      });
+    }
+
+    const overlayLegend = dashboard.querySelector("[data-overlay-legend]");
+    if (overlayLegend) {
+      overlayLegend.addEventListener("mouseover", (event) => {
+        const trigger = event.target.closest("[data-overlay-group-index]");
+        if (!trigger) {
+          return;
+        }
+        dashboard.dataset.overlayActiveGroupIndex = trigger.dataset.overlayGroupIndex;
+        syncDashboardOverlay(dashboard, true);
+      });
+      overlayLegend.addEventListener("focusin", (event) => {
+        const trigger = event.target.closest("[data-overlay-group-index]");
+        if (!trigger) {
+          return;
+        }
+        dashboard.dataset.overlayActiveGroupIndex = trigger.dataset.overlayGroupIndex;
+        syncDashboardOverlay(dashboard, true);
+      });
+      overlayLegend.addEventListener("mouseleave", () => {
+        if (dashboard.dataset.overlayLockedGroupIndex) {
+          return;
+        }
+        dashboard.dataset.overlayActiveGroupIndex = "";
+        syncDashboardOverlay(dashboard, true);
+      });
+      overlayLegend.addEventListener("focusout", () => {
+        window.setTimeout(() => {
+          if (
+            dashboard.dataset.overlayLockedGroupIndex ||
+            overlayLegend.contains(document.activeElement)
+          ) {
+            return;
+          }
+          dashboard.dataset.overlayActiveGroupIndex = "";
+          syncDashboardOverlay(dashboard, true);
+        }, 0);
+      });
+      overlayLegend.addEventListener("click", (event) => {
+        const trigger = event.target.closest("[data-overlay-group-index]");
+        if (!trigger) {
+          return;
+        }
+        const selected = trigger.dataset.overlayGroupIndex;
+        const locked = dashboard.dataset.overlayLockedGroupIndex || "";
+        if (locked === selected) {
+          dashboard.dataset.overlayLockedGroupIndex = "";
+          dashboard.dataset.overlayActiveGroupIndex = "";
+        } else {
+          dashboard.dataset.overlayLockedGroupIndex = selected;
+          dashboard.dataset.overlayActiveGroupIndex = selected;
+        }
+        syncDashboardOverlay(dashboard, true);
       });
     }
 

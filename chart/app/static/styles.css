@@ -406,6 +406,13 @@ a {
   gap: 16px;
 }
 
+.teacher-screen[data-layout-mode="dense"] {
+  width: min(100vw - 32px, 1480px);
+  min-height: calc(100vh - 32px);
+  aspect-ratio: auto;
+  align-self: start;
+}
+
 .teacher-screen-expanded {
   width: min(100vw - 32px, 1500px);
   min-height: calc(100vh - 32px);
@@ -602,6 +609,34 @@ a {
   display: grid;
   grid-template-columns: repeat(var(--teacher-grid-columns, 5), minmax(0, 1fr));
   gap: 12px;
+  align-content: start;
+}
+
+.teacher-screen[data-layout-mode="compact"] .teacher-grid {
+  grid-template-columns: repeat(2, minmax(280px, 360px));
+  justify-content: center;
+}
+
+.teacher-screen[data-layout-mode="balanced"] .teacher-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.teacher-screen[data-layout-mode="dense"] .teacher-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.teacher-screen[data-layout-mode="compact"] .chart-card {
+  min-height: 0;
+}
+
+.teacher-screen[data-layout-mode="compact"] .teacher-grid .chart-stage,
+.teacher-screen[data-layout-mode="compact"] .teacher-grid .chart-empty {
+  min-height: 228px;
+}
+
+.teacher-screen[data-layout-mode="dense"] .teacher-grid .chart-stage,
+.teacher-screen[data-layout-mode="dense"] .teacher-grid .chart-empty {
+  min-height: 168px;
 }
 
 .teacher-overlay-panel {
@@ -689,6 +724,22 @@ a {
   border: 1px solid rgba(201, 214, 230, 0.95);
   color: var(--text);
   font-weight: 700;
+  cursor: pointer;
+  opacity: var(--overlay-group-opacity, 1);
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.overlay-legend-item:hover,
+.overlay-legend-item:focus-visible,
+.overlay-legend-item[aria-pressed="true"] {
+  transform: translateY(-1px);
+  border-color: rgba(37, 99, 235, 0.28);
+  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.1);
+  outline: none;
 }
 
 .overlay-legend-swatch {
@@ -700,6 +751,51 @@ a {
   box-shadow:
     0 0 0 3px rgba(255, 255, 255, 0.92),
     0 0 0 4px rgba(37, 99, 235, 0.08);
+}
+
+.overlay-legend-marker {
+  width: 11px;
+  height: 11px;
+  flex: none;
+  background: var(--overlay-group-color);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.92);
+}
+
+.overlay-legend-marker.marker-circle {
+  border-radius: 999px;
+}
+
+.overlay-legend-marker.marker-square {
+  border-radius: 2px;
+}
+
+.overlay-legend-marker.marker-diamond {
+  transform: rotate(45deg);
+  border-radius: 2px;
+}
+
+.overlay-legend-marker.marker-triangle {
+  width: 0;
+  height: 0;
+  background: transparent;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-bottom: 11px solid var(--overlay-group-color);
+  box-shadow: none;
+}
+
+.overlay-legend-marker.marker-triangle-invert {
+  width: 0;
+  height: 0;
+  background: transparent;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 11px solid var(--overlay-group-color);
+  box-shadow: none;
+}
+
+.overlay-legend-marker.marker-hexagon {
+  clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
 }
 
 .chart-card {

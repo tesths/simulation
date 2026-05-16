@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import math
 from contextlib import asynccontextmanager
 from datetime import date
 from pathlib import Path
@@ -80,12 +79,20 @@ def _build_dashboard_items(
 
 def _dashboard_grid_columns(group_count: int) -> int:
     if group_count <= 4:
-        rows = 1
-    elif group_count <= 10:
-        rows = 2
-    else:
-        rows = 3
-    return max(1, math.ceil(group_count / rows))
+        return min(2, group_count) or 1
+    if group_count <= 8:
+        return 3
+    if group_count <= 12:
+        return 4
+    return 4
+
+
+def _teacher_layout_mode(group_count: int) -> str:
+    if group_count <= 4:
+        return "compact"
+    if group_count <= 8:
+        return "balanced"
+    return "dense"
 
 
 def _student_entry_path(classroom_slug: str) -> str:
@@ -502,6 +509,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 "classrooms": list_classrooms(settings.database_target),
                 "current_classroom": current_classroom,
                 "grid_columns": _dashboard_grid_columns(
+                    int(current_classroom["group_count"])
+                ),
+                "layout_mode": _teacher_layout_mode(
                     int(current_classroom["group_count"])
                 ),
                 "student_entry_path": student_entry_path,
